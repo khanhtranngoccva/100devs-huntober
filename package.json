@@ -2,7 +2,8 @@
   "name": "huntober-scripts",
   "version": "1.0.0",
   "description": "",
-  "main": "Week1.mjs",
+  "main": "Week1/Week1.mjs",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
