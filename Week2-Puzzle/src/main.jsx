@@ -36,36 +36,73 @@ const Winner = (props) => {
 }
 
 function GameSquare(props) {
-    const [lastSpot, setLastSpot] = React.useState(null);
+    const [lastSpot, setLastSpot] = React.useState(() => {
+        return null;
+    });
 
     const actualButtonRef = React.useRef(null);
 
     React.useEffect(() => {
-        const newPosition = actualButtonRef.current.getBoundingClientRect();
-        if (lastSpot) {
-            const oldPosition = lastSpot;
-            const deltaX = oldPosition.left - newPosition.left;
-            const deltaY = oldPosition.top - newPosition.top;
-            console.log(deltaX, deltaY);
+        if (props.val !== blankUrl) {
+            const curButton = actualButtonRef.current;
+            const newPosition = curButton.getBoundingClientRect();
+            if (lastSpot) {
+                animationActive = true;
+                const oldPosition = lastSpot;
+                const deltaX = oldPosition.left - newPosition.left;
+                const deltaY = oldPosition.top - newPosition.top;
+                curButton.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        curButton.style.animation = "none";
+                        curButton.style.animation = "backToPlace 0.25s ease-out forwards";
+                        function animationEnd() {
+                            setTimeout(() => {
+                                animationActive = false;
+                                curButton.style.transform = "none";
+                                curButton.style.animation = "none";
+                                curButton.removeEventListener("animationend", animationEnd);
+                            });
+                        }
+
+                        curButton.addEventListener("animationend", animationEnd);
+                    });
+                });
+            }
+            setLastSpot(newPosition);
         }
-        setLastSpot(newPosition);
-    }, [props.arrInd, props.valInd]);
+    }, [props.index]);
+
+    React.useEffect(() => {
+        function resize() {
+            const curButton = actualButtonRef.current;
+            setLastSpot(curButton.getBoundingClientRect());
+        }
+
+        if (props.val !== blankUrl) {
+            window.addEventListener("resize", resize)
+        } else {
+            window.removeEventListener("resize", resize);
+        }
+
+        return () => {
+            window.removeEventListener("resize", resize);
+        }
+    }, []);
 
     return <div ref={actualButtonRef} className='gameSquare' onClick={() => {
-        if (true) {
-            animationActive = true;
-            return props.onMove(props.arrInd, props.valInd);
-        }
-    }}>
-        <img src={props.val} alt={`Tile ${props.valInd + 1}`} id={props.val}/>
+        return props.onMove(Math.floor(props.index / 3), props.index % 3);
+    }} style={blankUrl === props.val ? {opacity: 0} : {}}>
+        <img src={props.val} alt={`Tile ${props.index + 1}`} id={props.val}/>
     </div>;
 }
 
 const GameBoard = (props) => {
-    const tiles = props.grid.map((arr, arrInd) => {
-        return arr.map((val, valInd) => {
-            return <GameSquare onMove={props.onMove} arrInd={arrInd} valInd={valInd} val={val} key={val}></GameSquare>
-        });
+    // Flat-mapping to prevent reinitializing of component
+    const images = props.grid.flatMap(x => x);
+
+    const tiles = images.map((image, index) => {
+        return <GameSquare onMove={props.onMove} index={index} val={image} key={image}></GameSquare>
     });
 
     return <section id='gameBoard'>
@@ -84,7 +121,9 @@ const Game = () => {
     // insert Day1 function 'checkWin' here
     // instead of return true or return false, use setIsWin(true) or setIsWin(false)
     function checkWin(grid1, grid2) {
-        setIsWin(deepStrictEquals(grid1, grid2));
+        let result = deepStrictEquals(grid1, grid2);
+        if (result) animationActive = false;
+        setIsWin(result);
     }
 
     // insert Day2 move left function 'moveBlankLeft(curGrid, blankChar)' here
@@ -126,25 +165,31 @@ const Game = () => {
     // My found and modified Day5 shuffle function
     // Uses Durstenfeld shuffle algorithm
     const shuffleGrid = () => {
-        setIsWin(false)
-        const tempFlatGrid = ([...grid].map(x => [...x])).flat()
+        if (!animationActive) {
+            if (isWin === false) {
+                animationActive = true;
+            }
+            setIsWin(false)
+            const tempFlatGrid = ([...grid].map(x => [...x])).flat()
 
-        for (let i = tempFlatGrid.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const temp = tempFlatGrid[i];
-            tempFlatGrid[i] = tempFlatGrid[j];
-            tempFlatGrid[j] = temp;
+            for (let i = tempFlatGrid.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const temp = tempFlatGrid[i];
+                tempFlatGrid[i] = tempFlatGrid[j];
+                tempFlatGrid[j] = temp;
+            }
+
+            const tempGrid = []
+            while (tempFlatGrid.length) {
+                tempGrid.push(tempFlatGrid.splice(0, 3))
+            }
+
+            setGrid(tempGrid);
         }
-
-        const tempGrid = []
-        while (tempFlatGrid.length) {
-            tempGrid.push(tempFlatGrid.splice(0, 3))
-        }
-
-        setGrid(tempGrid)
     }
 
     const resetGame = () => {
+        animationActive = false;
         setGrid([...gridWithBlank].map(x => [...x]))
         setIsWin(false)
         setMoveCount(0)
@@ -152,7 +197,6 @@ const Game = () => {
 
     const handleMove = (arrInd, valInd) => {
         const newGrid = [...grid].map(x => [...x])
-
         if (arrInd === blankSubArr) {
             const gridDimension = newGrid.length
             if (valInd - blankIndex === 1) {
@@ -203,7 +247,11 @@ const Game = () => {
             <button onClick={() => resetGame()}>New Game</button>
             {isWin ?
                 <Winner moves={moveCount}/> :
-                <GameBoard onMove={(arrInd, valInd) => handleMove(arrInd, valInd)} grid={grid}/>
+                <GameBoard onMove={(arrInd, valInd) => {
+                    if (!animationActive) {
+                        handleMove(arrInd, valInd);
+                    }
+                }} grid={grid}/>
             }
         </div>
     )

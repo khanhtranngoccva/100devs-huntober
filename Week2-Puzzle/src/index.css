@@ -50,3 +50,9 @@ p {
 .gameSquare {
   flex-basis: 33.3333333%;
 }
+
+@keyframes backToPlace {
+  100% {
+    transform: none;
+  }
+}
