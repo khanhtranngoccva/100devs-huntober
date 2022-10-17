@@ -31,7 +31,10 @@ let animationActive = false;
 
 const Winner = (props) => {
     return (
-        <h2>You won! It took you {props.moves} moves!</h2>
+        <h2 className={"winnerMessage"}>
+            You won!
+            It took you {props.moves} moves!
+        </h2>
     )
 }
 
@@ -242,17 +245,19 @@ const Game = () => {
     }
 
     return (
-        <div>
-            <button onClick={() => shuffleGrid()}>Shuffle</button>
-            <button onClick={() => resetGame()}>New Game</button>
-            {isWin ?
-                <Winner moves={moveCount}/> :
+        <div className={"game"}>
+            <div className={"buttons"}>
+                <button onClick={() => shuffleGrid()}>Shuffle</button>
+                <button onClick={() => resetGame()}>New Game</button>
+            </div>
+            <div className={"gameContainer"}>
+                {isWin && <Winner moves={moveCount}/>}
                 <GameBoard onMove={(arrInd, valInd) => {
                     if (!animationActive) {
                         handleMove(arrInd, valInd);
                     }
                 }} grid={grid}/>
-            }
+            </div>
         </div>
     )
 }
