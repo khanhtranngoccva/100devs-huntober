@@ -10,6 +10,8 @@
  * string is equal to the average length of the strings of the previous array.
  */
 function averageLength(arr) {
+    // Get the average length of the strings in the array, rounded to an integer.
     const averageLength = Math.round(arr.reduce((acc, item) => acc + item.length, 0) / arr.length);
+    // Map and repeat the first letter of each string.
     return arr.map(item => item[0].repeat(averageLength))
 }
